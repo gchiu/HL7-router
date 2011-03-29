@@ -1,0 +1,27 @@
+This application contains both the client and server to route HL7 messages between users using Amazon S3.
+
+Users folders are contained under a main HL7users folder.
+Each user has a "in" and an "out" folder.
+
+Client
+The client scans a send directory and pushes HL7 messages to their S3 out folder.
+It then downloads any HL7 messages in the S3 in folder to the local drive, and then deletes messages from S3 out.
+
+More functionality is to be added to the client to check HL7 message structure, and the ability to detach binaries that are ED encoded.
+
+Server
+The server scans each users' out folder and by inspecting the MSH segment determines which users' in folder it needs to go to.
+It also checks the MSH segment to make sure the message is from the person it says it is, and also that the recipient is on the system.
+Currently if it fails those tests, it leaves them in the users' out folder .. but could delete them and return an ACK error.
+
+Users
+Users need both an access key and a secret key ... these are provided by the person running the server.  Users do not require an Amazon AWS account themselves.
+Each user is a sub account of the master user, and has near full permissions on their own folder and sub folders.
+
+The users.r file contains a demo list of users ...
+
+Download - the compiled binary here
+http://accessories.s3.amazonaws.com/hl7-router.exe
+
+Graham Chiu
+29 March 2011
