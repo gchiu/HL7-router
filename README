@@ -4,8 +4,8 @@ Users folders are contained under a main HL7users folder.
 Each user has a "in" and an "out" folder.
 
 Client
-The client scans a send directory and pushes HL7 messages to their S3 out folder.
-It then downloads any HL7 messages in the S3 in folder to the local drive, and then deletes messages from S3 out.
+The client scans a send directory and pushes HL7 messages to their S3 out folder.  Sent messages are saved to a local archive directory.
+It then downloads any HL7 messages in the S3 in folder to the local drive, and then deletes messages from S3 in.
 
 More functionality is to be added to the client to check HL7 message structure, and the ability to detach binaries that are ED encoded.
 
