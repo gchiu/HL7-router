@@ -1,8 +1,8 @@
 rebol [
 	author: "Graham Chiu"
-	date: 2011-3-26
+	date: 2011-3-29
 	license: 'GPL
-    encap: [ title "Synapse HL7 Router v1.0.1 " quiet secure none]
+    encap: [ title "Synapse HL7 Router v1.0.2 " quiet secure none]
 ]
 
 #include %/c/rebol-sdk-276/source/prot.r
@@ -14,6 +14,10 @@ rebol [
 #include %xml-object.r
 #include %s3-ctx.r
 
+calcMD5: func [ binData ] [
+	return enbase/base checksum/method binData 'md5 16
+]
+
 ;------------
 ; open libraries used directly in the script
 ;------------
@@ -21,7 +25,6 @@ rebol [
 
 #include %glass-package.r
 gl: slim/open 'glass none
-
 
 ;------------
 ; /expose allows us to dump some of the functions from the liquid library within our script.
@@ -83,7 +86,7 @@ count-outbox: func [  accesskey secretkey edi-id s3root
 ]
 
 process-receive-dir: func [recvdir accesskey secretkey edi-id s3root
-	/local result errorresult obj contents filename filedata fullpath url
+	/local result errorresult obj contents filename filedata fullpath url obxs obx data filetype
 ] [
 	if error? try [
 		recvdir: to-rebol-file to-file recvdir
@@ -130,7 +133,23 @@ process-receive-dir: func [recvdir accesskey secretkey edi-id s3root
 					if parse result [ thru {<Error><Code>} copy errorresult to </error> to end ][
 						set-status rejoin [ errorresult " on " filename ]
 					]
-					;trace/net off
+					; we have the filel saved, now scan it to see if there's an attachment
+					obxs: []
+					parse/all filedata [  any [ thru "OBX|" copy obx to "^M" (append obxs obx) ]]
+					foreach obx obxs [
+						obx: parse/all obx "|"
+						if all [ obx/2 = "ED" obx/3 obx/5][
+							obx/3: parse/all obx/3 "^^"
+							; filetype: lowercase any [ obx/3/1 %.txt ]
+							obx/5: parse/all obx/5 "^^"
+							if all [ obx/5/3 obx/5/4 = "base64" obx/5/5 ][
+								data: debase obx/5/5
+								filetype: lowercase any [ obx/5/3 %.txt ]
+								write/binary to-file rejoin [ recvdir calcmd5 data "." filetype ] data
+								set-status join "decoded attachment of type " filetype
+							]
+						]
+					]
 				]
 			]
 			]
@@ -325,6 +344,5 @@ either exists? %hl7router.config [
 ] [
 	fill statusfld/aspects/label "Need configuring"
 ]
-
 
 do-events
